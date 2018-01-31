@@ -10,7 +10,7 @@
     	$g_id = $_POST['gene'];
         
     	try {
-    		$stmt = $db->prepare("SELECT t_id, chr, start, end, cds_start, cds_end, strand, seq FROM rtd2_transcripts WHERE g_id = :g_id ORDER BY start, end, DESC");
+    		$stmt = $db->prepare("SELECT t_id, chr, start, end, cds_start, cds_end, strand, seq FROM rtd2_transcripts WHERE g_id = :g_id ORDER BY start, end DESC");
     		$stmt->bindValue('g_id', $g_id);
     		$stmt->execute();
     		if ($stmt->rowCount() > 0) {
@@ -26,11 +26,15 @@
                         "sequence" => $row["seq"]
                     ); 
     			}
-    		}
 
-    	# Gene not found
+            # Gene not found
+    		} else {
+                echo json_encode(array( "okay" => False, "messages" => $g_id . " not found!" ));
+                exit;
+            }
+
     	} catch (PDOException $ex) {
-    		echo json_encode(array( "okay" => False, "messages" => $g_id . " not found!" ));
+    		echo json_encode(array( "okay" => False, "messages" => $ex ));
     		exit;
     	}
         
@@ -45,10 +49,13 @@
                 foreach ($stmt as $row) {
                     array_push($transcripts[$row['t_id']]['exons'], array( (int)$row['start'], (int)$row['end'] ));
                 }
+            } else {
+                echo json_encode(array( "okay" => False, "messages" => "Error fetching exons." ));
+                exit;               
             }
             
         } catch (PDOException $ex) {
-            echo json_encode(array( "okay" => False, "messages" => "Error fetching exons." ));
+            echo json_encode(array( "okay" => False, "messages" => $ex ));
             exit;
         }
         
@@ -63,24 +70,31 @@
                 foreach ($stmt as $row) {
                     array_push($transcripts[$row['t_id']]['introns'], array( (int)$row['start'], (int)$row['end'] ));
                 }
+            } else {
+                echo json_encode(array( "okay" => False, "messages" => "Error fetching introns." ));
+                exit;
             }
             
         } catch (PDOException $ex) {
-            echo json_encode(array( "okay" => False, "messages" => "Error fetching introns." ));
+            echo json_encode(array( "okay" => False, "messages" => $ex ));
             exit;
         }
-        
+
         # Get the 'gene' start and end
         $all_trs = array_keys($transcripts);
-        
+
         # Get the earliest transcript start
         $min = PHP_INT_MAX;
-        foreach ($all_trs as $t) { $min = min($min, $transcripts[$t]['coord']['start']); }
+        foreach ($all_trs as $t) { $min = min($min, $transcripts[$t]['start']); }
         
         # Get the latest transcript end
         $max = 0;
-        foreach ($all_trs as $t) { $max = max($max, $transcripts[$t]['coord']['end']); }
+        foreach ($all_trs as $t) { $max = max($max, $transcripts[$t]['end']); }
         
+        # Determine the longest transcript size
+        $longest = 0;
+        foreach ($all_trs as $t) { $longest = max($longest, ( $transcripts[$t]['end'] - $transcripts[$t]['start'] )); }
+
         # Return json array
         echo json_encode(array(
             "okay" => True,
@@ -90,7 +104,8 @@
                 "chr" => $chr,
                 "strand" => $strand,
                 "start" => $min,
-                "end" => $max
+                "end" => $max,
+                "longest" => $longest
             ),
             "transcripts" => $transcripts
         ));

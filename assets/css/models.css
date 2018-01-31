@@ -1,0 +1,34 @@
+:root {
+	--transcript-color: #428bca;
+}
+
+#isoforms {
+	margin-top: 1em;
+}
+.t_id { 
+	margin: 0 0 0 5px;
+	font-size: 12px;
+	display: inline-block;
+	width: 100px;
+}
+.transcript {
+	height: 12px;
+	position: relative;
+	margin: 0 5px 5px 5px;
+	display: inline-block;
+	vertical-align: middle;
+}
+.exon {
+	height: 12px;
+	background-color: var(--transcript-color);
+	display: inline-block;
+	margin: 0;
+	position: absolute;
+}
+.intron {
+	height: 2px;
+	background-color: var(--transcript-color);
+	display: inline-block;
+	margin: 5px 0 5px; 
+	position: absolute;
+}
